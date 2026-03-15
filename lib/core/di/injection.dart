@@ -51,6 +51,13 @@ import '../../features/market_watch/domain/repositories/market_watch_repository.
 import '../../features/market_watch/domain/usecases/market_watch_usecases.dart';
 import '../../features/market_watch/presentation/bloc/market_watch_bloc.dart';
 
+// Market Watch — Instruments
+import '../../features/market_watch/data/datasources/instrument_mock_datasource.dart';
+import '../../features/market_watch/data/repositories/instrument_repository_impl.dart';
+import '../../features/market_watch/domain/repositories/instrument_repository.dart';
+import '../../features/market_watch/domain/usecases/instrument_usecases.dart';
+import '../../features/market_watch/presentation/bloc/instrument_bloc.dart';
+
 // Indices
 import '../../features/indices/data/datasources/indices_mock_datasource.dart';
 import '../../features/indices/data/repositories/indices_repository_impl.dart';
@@ -62,6 +69,9 @@ final sl = GetIt.instance;
 
 /// Initialise toutes les dépendances de l'application
 Future<void> initDependencies() async {
+  // Évite les erreurs de double-registration lors du hot restart
+  if (sl.isRegistered<LocalStorageService>()) return;
+
   // ═══════════════════════════════════════════
   // ── CORE SERVICES ──
   // ═══════════════════════════════════════════
@@ -244,6 +254,29 @@ Future<void> initDependencies() async {
         getMWTopCapitaux: sl(),
         getMWTopQuantite: sl(),
         getMWTopTransactions: sl(),
+      ));
+
+  // ═══════════════════════════════════════════
+  // ── MARKET WATCH — INSTRUMENTS ──
+  // ═══════════════════════════════════════════
+
+  // Data Sources
+  sl.registerLazySingleton(() => InstrumentMockDataSource());
+
+  // Repositories
+  sl.registerLazySingleton<InstrumentRepository>(
+    () => InstrumentRepositoryImpl(dataSource: sl()),
+  );
+
+  // Use Cases
+  sl.registerFactory(() => GetInstrumentsByMarket(sl()));
+  sl.registerFactory(() => SearchInstruments(sl()));
+
+  // BLoC
+  sl.registerFactory(() => InstrumentBloc(
+        getInstrumentsByMarket: sl(),
+        searchInstruments: sl(),
+        localStorage: sl<LocalStorageService>(),
       ));
 
   // ═══════════════════════════════════════════

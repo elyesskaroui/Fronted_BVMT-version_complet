@@ -13,11 +13,15 @@ import '../../../indices/domain/entities/indices_stock_entity.dart';
 import '../../../indices/presentation/bloc/indices_bloc.dart';
 import '../../../indices/presentation/bloc/indices_event.dart';
 import '../../../indices/presentation/bloc/indices_state.dart';
+import '../bloc/instrument_bloc.dart';
+import '../bloc/instrument_event.dart';
+import '../bloc/instrument_state.dart';
 import '../bloc/market_watch_bloc.dart';
 import '../bloc/market_watch_event.dart';
 import '../bloc/market_watch_state.dart';
 import '../widgets/mw_index_chart_card.dart';
 import '../widgets/mw_indices_full_content.dart';
+import '../widgets/mw_instruments_content.dart';
 import '../widgets/mw_market_summary_banner.dart';
 import '../widgets/mw_top_stocks_card.dart';
 
@@ -50,10 +54,14 @@ class _MarketWatchPageState extends State<MarketWatchPage>
   // IndicesBloc (créé localement pour le sous-onglet Indices)
   late final IndicesBloc _indicesBloc;
 
+  // InstrumentBloc (créé localement pour le sous-onglet Instruments)
+  late final InstrumentBloc _instrumentBloc;
+
   @override
   void initState() {
     super.initState();
     _indicesBloc = sl<IndicesBloc>();
+    _instrumentBloc = sl<InstrumentBloc>();
     _mainTabController = TabController(length: 2, vsync: this);
     _mainTabController.addListener(() {
       if (!_mainTabController.indexIsChanging) {
@@ -75,6 +83,7 @@ class _MarketWatchPageState extends State<MarketWatchPage>
     _searchFocusNode.dispose();
     _timestampTimer?.cancel();
     _indicesBloc.close();
+    _instrumentBloc.close();
     super.dispose();
   }
 
@@ -95,8 +104,11 @@ class _MarketWatchPageState extends State<MarketWatchPage>
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<IndicesBloc>.value(
-      value: _indicesBloc,
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<IndicesBloc>.value(value: _indicesBloc),
+        BlocProvider<InstrumentBloc>.value(value: _instrumentBloc),
+      ],
       child: BlocBuilder<MarketWatchBloc, MarketWatchState>(
         builder: (context, state) {
           return AnimatedSwitcher(
@@ -537,14 +549,13 @@ class _MarketWatchPageState extends State<MarketWatchPage>
   }
 
   // ═══════════════════════════════════════════
-  // ── SUB TABS (Résumé / Tout / Marché / Indices) ──
+  // ── SUB TABS (Résumé du Marché / Instruments / Indices) ──
   // ═══════════════════════════════════════════
   Widget _buildSubTabs(MarketWatchLoaded state) {
-    const tabs = ['Résumé', 'Tout', 'Marché', 'Indices'];
+    const tabs = ['Résumé du Marché', 'Instruments', 'Indices'];
     const icons = [
       Icons.dashboard_rounded,
       Icons.list_alt_rounded,
-      Icons.store_rounded,
       Icons.timeline_rounded,
     ];
 
@@ -563,7 +574,7 @@ class _MarketWatchPageState extends State<MarketWatchPage>
                       .read<MarketWatchBloc>()
                       .add(MarketWatchSubTabChanged(e.key));
                   // Lazy-load indices data when Indices tab selected
-                  if (e.key == 3) {
+                  if (e.key == 2) {
                     if (_indicesBloc.state is IndicesInitial) {
                       _indicesBloc.add(const IndicesLoadRequested());
                     }
@@ -634,10 +645,17 @@ class _MarketWatchPageState extends State<MarketWatchPage>
       case 0:
         return _buildResumeSummary(state, hPadding);
       case 1:
-        return _buildToutContent(state, hPadding);
+        // Instruments tab — full content with sub-tabs + table
+        if (_instrumentBloc.state is InstrumentInitial) {
+          _instrumentBloc.add(const InstrumentLoadRequested());
+        }
+        return [
+          SliverFillRemaining(
+            hasScrollBody: true,
+            child: MwInstrumentsContent(hPadding: hPadding),
+          ),
+        ];
       case 2:
-        return _buildMarcheContent(state, hPadding);
-      case 3:
         // Lazy-load on first build (e.g. deep link)
         if (_indicesBloc.state is IndicesInitial) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -757,137 +775,6 @@ class _MarketWatchPageState extends State<MarketWatchPage>
       ),
       SliverToBoxAdapter(
         child: _buildBottomTopTabs(state, hPadding),
-      ),
-    ];
-  }
-
-  // ═══════════════════════════════════════════
-  // ── SUB-TAB 1: TOUT (all stocks merged) ──
-  // ═══════════════════════════════════════════
-  List<Widget> _buildToutContent(
-      MarketWatchLoaded state, double hPadding) {
-    final query = state.searchQuery;
-
-    // Merge all unique stocks from all lists
-    final allMap = <String, TopStockEntry>{};
-    for (final list in [
-      state.topHausses,
-      state.topBaisses,
-      state.topCapitaux,
-      state.topQuantite,
-      state.topTransactions,
-    ]) {
-      for (final e in list) {
-        allMap.putIfAbsent(e.symbol, () => e);
-      }
-    }
-    var allStocks = allMap.values.toList()
-      ..sort((a, b) => b.changePercent.compareTo(a.changePercent));
-    allStocks = _filterEntries(allStocks, query);
-
-    return [
-      SliverToBoxAdapter(
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(hPadding, 8, hPadding, 0),
-          child: _buildSectionTitle(
-            'Toutes les Valeurs (${allStocks.length})',
-            Icons.list_alt_rounded,
-          ),
-        ),
-      ),
-      SliverToBoxAdapter(
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(hPadding, 12, hPadding, 0),
-          child: MwTopStocksCard(
-            title: 'TOUTES LES VALEURS',
-            sessionDate: state.summary.sessionDate,
-            isOpen: state.summary.isSessionOpen,
-            entries: allStocks,
-            metricColumnHeader: 'CAPITAUX',
-            maxVisible: 10,
-            expanded: _expandedSections['tout'] ?? false,
-            onToggleExpand: () => setState(() {
-              _expandedSections['tout'] =
-                  !(_expandedSections['tout'] ?? false);
-            }),
-          ),
-        ),
-      ),
-    ];
-  }
-
-  // ═══════════════════════════════════════════
-  // ── SUB-TAB 2: MARCHÉ (market stats + rankings) ──
-  // ═══════════════════════════════════════════
-  List<Widget> _buildMarcheContent(
-      MarketWatchLoaded state, double hPadding) {
-    final query = state.searchQuery;
-    final s = state.summary;
-
-    return [
-      // ── Market overview stats ──
-      SliverToBoxAdapter(
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(hPadding, 8, hPadding, 0),
-          child: _buildSectionTitle('Vue d\'ensemble', Icons.analytics_rounded),
-        ),
-      ),
-      SliverToBoxAdapter(
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(hPadding, 12, hPadding, 0),
-          child: _buildMarketOverviewCard(s),
-        ),
-      ),
-
-      // ── Top Capitaux ──
-      SliverToBoxAdapter(
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(hPadding, 20, hPadding, 0),
-          child: _buildSectionTitle('Top Capitaux', Icons.paid_rounded),
-        ),
-      ),
-      SliverToBoxAdapter(
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(hPadding, 12, hPadding, 0),
-          child: MwTopStocksCard(
-            title: 'TOP CAPITAUX',
-            sessionDate: s.sessionDate,
-            isOpen: s.isSessionOpen,
-            entries: _filterEntries(state.topCapitaux, query),
-            metricColumnHeader: 'CAPITAUX',
-            expanded: _expandedSections['marche_cap'] ?? false,
-            onToggleExpand: () => setState(() {
-              _expandedSections['marche_cap'] =
-                  !(_expandedSections['marche_cap'] ?? false);
-            }),
-          ),
-        ),
-      ),
-
-      // ── Top Transactions ──
-      SliverToBoxAdapter(
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(hPadding, 20, hPadding, 0),
-          child: _buildSectionTitle(
-              'Top Transactions', Icons.swap_horiz_rounded),
-        ),
-      ),
-      SliverToBoxAdapter(
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(hPadding, 12, hPadding, 0),
-          child: MwTopStocksCard(
-            title: 'TOP TRANSACTIONS',
-            sessionDate: s.sessionDate,
-            isOpen: s.isSessionOpen,
-            entries: _filterEntries(state.topTransactions, query),
-            metricColumnHeader: 'NB TRANS.',
-            expanded: _expandedSections['marche_trans'] ?? false,
-            onToggleExpand: () => setState(() {
-              _expandedSections['marche_trans'] =
-                  !(_expandedSections['marche_trans'] ?? false);
-            }),
-          ),
-        ),
       ),
     ];
   }
