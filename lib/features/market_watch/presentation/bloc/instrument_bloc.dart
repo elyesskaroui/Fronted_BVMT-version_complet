@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -14,6 +15,8 @@ class InstrumentBloc extends Bloc<InstrumentEvent, InstrumentState> {
   final SearchInstruments searchInstruments;
   final LocalStorageService localStorage;
 
+  Timer? _autoRefreshTimer;
+
   InstrumentBloc({
     required this.getInstrumentsByMarket,
     required this.searchInstruments,
@@ -24,8 +27,21 @@ class InstrumentBloc extends Bloc<InstrumentEvent, InstrumentState> {
     on<InstrumentSearchChanged>(_onSearchChanged);
     on<InstrumentSortRequested>(_onSortRequested);
     on<InstrumentRefreshRequested>(_onRefreshRequested);
+    on<InstrumentAutoRefreshTick>((event, emit) async {
+      if (state is InstrumentLoaded) {
+        await _loadMarket(emit, (state as InstrumentLoaded).currentMarket);
+      } else {
+        await _loadMarket(emit, InstrumentMarket.actions);
+      }
+    });
   }
-
+  void _startAutoRefresh() {
+    _autoRefreshTimer?.cancel();
+    _autoRefreshTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => add(const InstrumentAutoRefreshTick()),
+    );
+  }
   // ═══════════════════════════════════════════
   // ── Event Handlers ──
   // ═══════════════════════════════════════════
@@ -50,6 +66,7 @@ class InstrumentBloc extends Bloc<InstrumentEvent, InstrumentState> {
 
     // 2. Fetch frais
     await _loadMarket(emit, market);
+    _startAutoRefresh();
   }
 
   Future<void> _onMarketChanged(
@@ -277,5 +294,11 @@ class InstrumentBloc extends Bloc<InstrumentEvent, InstrumentState> {
     } catch (_) {
       return null;
     }
+  }
+
+  @override
+  Future<void> close() {
+    _autoRefreshTimer?.cancel();
+    return super.close();
   }
 }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -20,6 +21,8 @@ class IndicesBloc extends Bloc<IndicesEvent, IndicesState> {
   final LocalStorageService localStorage;
   final IndicesMockDataSource _dataSource;
 
+  Timer? _autoRefreshTimer;
+
   IndicesBloc({
     required this.getAllIndicesStocks,
     required this.searchIndicesStocks,
@@ -29,10 +32,19 @@ class IndicesBloc extends Bloc<IndicesEvent, IndicesState> {
         super(const IndicesInitial()) {
     on<IndicesLoadRequested>(_onLoadRequested);
     on<IndicesRefreshRequested>(_onRefreshRequested);
+    on<IndicesAutoRefreshTick>((event, emit) => _loadData(emit));
     on<IndicesSearchChanged>(_onSearchChanged);
     on<IndicesSortRequested>(_onSortRequested);
     on<IndicesIndexChanged>(_onIndexChanged);
     on<IndicesChartPeriodChanged>(_onChartPeriodChanged);
+  }
+
+  void _startAutoRefresh() {
+    _autoRefreshTimer?.cancel();
+    _autoRefreshTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => add(const IndicesAutoRefreshTick()),
+    );
   }
 
   Future<void> _onLoadRequested(
@@ -59,6 +71,7 @@ class IndicesBloc extends Bloc<IndicesEvent, IndicesState> {
 
     // ── 2. Fetch des données fraîches via Use Case ──
     await _loadData(emit);
+    _startAutoRefresh();
   }
 
   Future<void> _onRefreshRequested(
@@ -304,5 +317,11 @@ class IndicesBloc extends Bloc<IndicesEvent, IndicesState> {
     } catch (_) {
       return null;
     }
+  }
+
+  @override
+  Future<void> close() {
+    _autoRefreshTimer?.cancel();
+    return super.close();
   }
 }

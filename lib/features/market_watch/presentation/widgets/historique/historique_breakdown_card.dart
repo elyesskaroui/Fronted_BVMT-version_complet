@@ -573,7 +573,6 @@ class _AnimatedBuilder extends AnimatedWidget {
   final Widget Function(BuildContext, Widget?) builder;
 
   const _AnimatedBuilder({
-    super.key,
     required Animation super.listenable,
     required this.builder,
   });

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../home/domain/entities/stock_entity.dart';
 import '../../domain/usecases/market_usecases.dart';
@@ -13,6 +14,8 @@ class MarketBloc extends Bloc<MarketEvent, MarketState> {
   final GetTopLosers getTopLosers;
   final GetMostActive getMostActive;
 
+  Timer? _autoRefreshTimer;
+
   MarketBloc({
     required this.getAllStocks,
     required this.getMarketIndices,
@@ -23,8 +26,17 @@ class MarketBloc extends Bloc<MarketEvent, MarketState> {
   }) : super(const MarketInitial()) {
     on<MarketLoadRequested>(_onLoadRequested);
     on<MarketRefreshRequested>(_onRefreshRequested);
+    on<MarketAutoRefreshTick>((event, emit) => _loadData(emit));
     on<MarketSearchRequested>(_onSearchRequested);
     on<MarketTabChanged>(_onTabChanged);
+  }
+
+  void _startAutoRefresh() {
+    _autoRefreshTimer?.cancel();
+    _autoRefreshTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => add(const MarketAutoRefreshTick()),
+    );
   }
 
   Future<void> _onLoadRequested(
@@ -33,6 +45,7 @@ class MarketBloc extends Bloc<MarketEvent, MarketState> {
   ) async {
     emit(const MarketLoading());
     await _loadData(emit);
+    _startAutoRefresh();
   }
 
   Future<void> _onRefreshRequested(
@@ -40,6 +53,12 @@ class MarketBloc extends Bloc<MarketEvent, MarketState> {
     Emitter<MarketState> emit,
   ) async {
     await _loadData(emit);
+  }
+
+  @override
+  Future<void> close() {
+    _autoRefreshTimer?.cancel();
+    return super.close();
   }
 
   Future<void> _onSearchRequested(
@@ -109,7 +128,9 @@ class MarketBloc extends Bloc<MarketEvent, MarketState> {
         topLosers: results[3] as dynamic,
         mostActive: results[4] as dynamic,
       ));
-    } catch (e) {
+    } catch (e, stack) {
+      print('>>> [MarketBloc] ERROR: $e');
+      print('>>> [MarketBloc] STACK: $stack');
       emit(MarketError('Impossible de charger les données marché: ${e.toString()}'));
     }
   }

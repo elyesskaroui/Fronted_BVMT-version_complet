@@ -303,16 +303,19 @@ class _MwInstrumentsContentState extends State<MwInstrumentsContent>
       highlightColor: const Color(0xFFF5F6FA),
       child: Padding(
         padding: EdgeInsets.all(widget.hPadding),
-        child: Column(
-          children: List.generate(
-            8,
-            (i) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Container(
-                height: 52,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
+        child: SingleChildScrollView(
+          physics: const NeverScrollableScrollPhysics(),
+          child: Column(
+            children: List.generate(
+              8,
+              (i) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Container(
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
             ),

@@ -199,7 +199,8 @@ class IndicesMockDataSource {
       current = current.clamp(baseValue - 30, baseValue + 25);
       points.add(IndexChartPoint(minutesSince9: m, value: current));
     }
-    return points;
+    return points; 
+    
   }
 
   /// Mapping des actions par indice sectoriel

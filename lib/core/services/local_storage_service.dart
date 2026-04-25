@@ -43,7 +43,6 @@ class LocalStorageService {
     _box.erase();
   }
 
-  // ── Chart Data Cache (GetStorage) ──
 
   /// Sauvegarde les données intraday d'un indice dans GetStorage
   void cacheChartData(String indexName, List<ChartPoint> data) {
@@ -93,7 +92,7 @@ class LocalStorageService {
     _box.remove('$_keyChartTimestamp$indexName');
   }
 
-  // ── Generic Raw Access (pour les features qui gèrent leur propre cache) ──
+
 
   /// Écriture brute dans GetStorage (clé/valeur)
   void writeRaw<T>(String key, T value) => _box.write(key, value);

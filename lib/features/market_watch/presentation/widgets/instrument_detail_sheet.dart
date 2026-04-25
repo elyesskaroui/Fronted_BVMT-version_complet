@@ -7,6 +7,7 @@ import 'package:shimmer/shimmer.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_typography.dart';
 import '../../data/datasources/instrument_detail_mock_datasource.dart';
+import '../../data/datasources/instrument_publication_remote_datasource.dart';
 import '../../domain/entities/instrument_detail_models.dart';
 import '../../domain/entities/instrument_entity.dart';
 import 'detail_chart_tab.dart';
@@ -14,6 +15,8 @@ import 'detail_order_book_tab.dart';
 import 'detail_publications_tab.dart';
 import 'detail_summary_tab.dart';
 import 'detail_transactions_tab.dart';
+import 'package:get_it/get_it.dart';
+import 'package:dio/dio.dart';
 
 // ==========================================================================
 // InstrumentDetailSheet — BottomSheet modal premium 10/10
@@ -51,6 +54,9 @@ class _InstrumentDetailSheetState extends State<InstrumentDetailSheet>
   late AnimationController _headerAnimCtrl;
   late Animation<double> _headerFadeIn;
   final _dataSource = InstrumentDetailMockDataSource();
+  final _publicationRemote = InstrumentPublicationRemoteDataSource(
+    dio: GetIt.instance<Dio>(),
+  );
 
   // Data loaded per tab
   OrderBook? _orderBook;
@@ -154,7 +160,7 @@ class _InstrumentDetailSheetState extends State<InstrumentDetailSheet>
           break;
         case 3:
           if (_publications != null) return;
-          final data = await _dataSource.getPublications(widget.instrument);
+          final data = await _publicationRemote.getPublications(widget.instrument);
           if (mounted) setState(() => _publications = data);
           break;
       }
@@ -178,7 +184,7 @@ class _InstrumentDetailSheetState extends State<InstrumentDetailSheet>
           break;
         case 4:
           if (_publications != null) return;
-          final data = await _dataSource.getPublications(widget.instrument);
+          final data = await _publicationRemote.getPublications(widget.instrument);
           if (mounted) setState(() => _publications = data);
           break;
       }

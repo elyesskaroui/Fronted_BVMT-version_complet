@@ -14,10 +14,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   Future<void> _onLogin(AuthLoginRequested event, Emitter<AuthState> emit) async {
     emit(state.copyWith(status: AuthStatus.loading));
 
-    // Simuler un délai réseau
     await Future.delayed(const Duration(seconds: 1));  
-
-    // Validation basique
+    
     if (event.email.isEmpty || event.password.isEmpty) {
       emit(state.copyWith(
         status: AuthStatus.failure,

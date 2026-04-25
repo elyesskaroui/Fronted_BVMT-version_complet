@@ -49,6 +49,11 @@ class IndicesChartPeriodChanged extends IndicesEvent {
   List<Object?> get props => [period];
 }
 
+/// Rafraîchissement automatique (timer interne — polling temps réel)
+class IndicesAutoRefreshTick extends IndicesEvent {
+  const IndicesAutoRefreshTick();
+}
+
 /// Colonnes de tri disponibles
 enum IndicesSortColumn {
   name,

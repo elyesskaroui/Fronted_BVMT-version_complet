@@ -160,7 +160,7 @@ class _HomeNewsPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Afficher les 3 dernières news
-    final newsList = NewsMockDataSource().getAllNews().take(3).toList();
+    final newsList = NewsMockDataSource().buildData().take(3).toList();
 
     return Column(
       children: [

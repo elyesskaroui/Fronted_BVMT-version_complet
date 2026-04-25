@@ -76,13 +76,19 @@ class StockPublication extends Equatable {
   final String date;
   final String titre;
   final String? description;
+  final String? pdfUrl;
+  final String? detailUrl;
 
   const StockPublication({
     required this.date,
     required this.titre,
     this.description,
+    this.pdfUrl,
+    this.detailUrl,
   });
 
+  bool get hasPdf => pdfUrl != null && pdfUrl!.isNotEmpty;
+
   @override
-  List<Object?> get props => [date, titre, description];
+  List<Object?> get props => [date, titre, description, pdfUrl];
 }

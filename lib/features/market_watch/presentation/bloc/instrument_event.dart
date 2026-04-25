@@ -38,6 +38,11 @@ class InstrumentSortRequested extends InstrumentEvent {
   List<Object?> get props => [column, ascending];
 }
 
+/// Rafraîchissement automatique (timer interne — polling temps réel)
+class InstrumentAutoRefreshTick extends InstrumentEvent {
+  const InstrumentAutoRefreshTick();
+}
+
 /// Rafraîchissement des données
 class InstrumentRefreshRequested extends InstrumentEvent {
   const InstrumentRefreshRequested();

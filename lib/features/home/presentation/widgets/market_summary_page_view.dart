@@ -101,6 +101,7 @@ class _MarketSummaryPageViewState extends State<MarketSummaryPageView> {
           final color = _tabColor(i);
 
           return GestureDetector(
+            
             onTap: () => _goTo(i),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 250),

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:glassmorphism/glassmorphism.dart';
 import '../../../../core/constants/app_colors.dart';
 
-/// Container glassmorphique réutilisable pour l'authentification
+
 class GlassCard extends StatelessWidget {
   final Widget child;
   final double? width;

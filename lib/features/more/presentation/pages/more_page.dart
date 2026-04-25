@@ -54,6 +54,12 @@ class MorePage extends StatelessWidget {
 
           SliverToBoxAdapter(
             child: _buildSection('Marché', [
+              _MenuItem(
+                icon: Icons.newspaper,
+                title: 'Actualités & Publications',
+                subtitle: 'Dernières publications BVMT',
+                onTap: () => context.push('/news'),
+              ),
               _MenuItem(icon: Icons.currency_exchange, title: 'Devise', subtitle: 'TND'),
               _MenuItem(icon: Icons.access_time, title: 'Horaires BVMT', subtitle: 'Lun-Ven, 09:00-14:10'),
               _MenuItem(icon: Icons.info_outline, title: 'Guide BVMT', subtitle: 'Apprendre la bourse'),
@@ -262,7 +268,7 @@ class MorePage extends StatelessWidget {
                           : null,
                       trailing: const Icon(Icons.chevron_right, color: AppColors.textSecondary, size: 20),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-                      onTap: () {},
+                      onTap: item.onTap ?? () {},
                     ),
                     if (!isLast)
                       Divider(
@@ -286,6 +292,7 @@ class _MenuItem {
   final IconData icon;
   final String title;
   final String? subtitle;
+  final VoidCallback? onTap;
 
-  const _MenuItem({required this.icon, required this.title, this.subtitle});
+  const _MenuItem({required this.icon, required this.title, this.subtitle, this.onTap});
 }

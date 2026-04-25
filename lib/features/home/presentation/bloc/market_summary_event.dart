@@ -17,6 +17,11 @@ class MarketSummaryRefreshRequested extends MarketSummaryEvent {
   const MarketSummaryRefreshRequested();
 }
 
+/// Rafraîchissement automatique (timer interne — polling temps réel)
+class MarketSummaryAutoRefreshTick extends MarketSummaryEvent {
+  const MarketSummaryAutoRefreshTick();
+}
+
 /// Changement de page dans le slider résumé
 class MarketSummaryPageChanged extends MarketSummaryEvent {
   final int page;

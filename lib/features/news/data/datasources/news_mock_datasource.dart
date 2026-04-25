@@ -1,8 +1,21 @@
+import 'package:dio/dio.dart';
 import '../../domain/entities/news_entity.dart';
+import 'news_remote_datasource.dart';
 
 /// Source de données mock pour les actualités
-class NewsMockDataSource {
-  List<NewsEntity> getAllNews() {
+class NewsMockDataSource extends NewsRemoteDataSource {
+  NewsMockDataSource() : super(dio: Dio());
+
+  @override
+  Future<List<NewsEntity>> getAllNews({
+    int page = 1,
+    int limit = 20,
+    String? category,
+    String? search,
+  }) async =>
+      buildData();
+
+  List<NewsEntity> buildData() {
     final now = DateTime.now();
     return [
       NewsEntity(
@@ -126,10 +139,10 @@ class NewsMockDataSource {
   }
 
   List<NewsEntity> getNewsByCategory(String category) {
-    return getAllNews().where((n) => n.category == category).toList();
+    return buildData().where((n) => n.category == category).toList();
   }
 
   List<NewsEntity> getNewsBySymbol(String symbol) {
-    return getAllNews().where((n) => n.relatedSymbol == symbol).toList();
+    return buildData().where((n) => n.relatedSymbol == symbol).toList();
   }
 }

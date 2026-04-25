@@ -820,9 +820,11 @@ class _MarketWatchPageState extends State<MarketWatchPage>
   }
 
   // ═══════════════════════════════════════════
-  // ── MARKET OVERVIEW CARD ──
+  // ── SECTION TITLE ──
+  // (market overview card removed — unused)
   // ═══════════════════════════════════════════
-  Widget _buildMarketOverviewCard(MarketSummaryEntity s) {
+  // ignore: unused_element
+  Widget _buildMarketOverviewCard_removed(MarketSummaryEntity s) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(

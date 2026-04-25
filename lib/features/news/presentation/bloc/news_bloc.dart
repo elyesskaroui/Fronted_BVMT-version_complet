@@ -1,11 +1,11 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../data/datasources/news_mock_datasource.dart';
+import '../../data/datasources/news_remote_datasource.dart';
 import '../../domain/entities/news_entity.dart';
 import 'news_event.dart';
 import 'news_state.dart';
 
 class NewsBloc extends Bloc<NewsEvent, NewsState> {
-  final NewsMockDataSource dataSource;
+  final NewsRemoteDataSource dataSource;
 
   NewsBloc({required this.dataSource}) : super(const NewsInitial()) {
     on<NewsLoadRequested>(_onLoad);
@@ -13,21 +13,28 @@ class NewsBloc extends Bloc<NewsEvent, NewsState> {
     on<NewsRefreshRequested>(_onRefresh);
   }
 
-  static const _categories = ['Tout', 'marché', 'entreprise', 'analyse', 'économie'];
-
   Future<void> _onLoad(NewsLoadRequested event, Emitter<NewsState> emit) async {
     emit(const NewsLoading());
-    await Future.delayed(const Duration(milliseconds: 300));
     try {
-      final allNews = dataSource.getAllNews();
+      final allNews = await dataSource.getAllNews();
+
+      // Extraire les catégories dynamiquement depuis les données
+      final dynamicCategories = allNews
+          .map((n) => n.category)
+          .where((c) => c.isNotEmpty)
+          .toSet()
+          .toList()
+        ..sort();
+      final categories = ['Tout', ...dynamicCategories];
+
       emit(NewsLoaded(
         allNews: allNews,
         filteredNews: allNews,
         selectedCategory: 'Tout',
-        categories: _categories,
+        categories: categories,
       ));
     } catch (e) {
-      emit(NewsError(e.toString()));
+      emit(NewsError('Impossible de charger les publications: $e'));
     }
   }
 
@@ -38,7 +45,9 @@ class NewsBloc extends Bloc<NewsEvent, NewsState> {
     if (event.category == 'Tout') {
       filtered = current.allNews;
     } else {
-      filtered = current.allNews.where((n) => n.category == event.category).toList();
+      filtered = current.allNews
+          .where((n) => n.category.toLowerCase() == event.category.toLowerCase())
+          .toList();
     }
     emit(NewsLoaded(
       allNews: current.allNews,
@@ -49,19 +58,34 @@ class NewsBloc extends Bloc<NewsEvent, NewsState> {
   }
 
   Future<void> _onRefresh(NewsRefreshRequested event, Emitter<NewsState> emit) async {
-    final allNews = dataSource.getAllNews();
-    final category = (state is NewsLoaded) ? (state as NewsLoaded).selectedCategory : 'Tout';
-    List<NewsEntity> filtered;
-    if (category == 'Tout') {
-      filtered = allNews;
-    } else {
-      filtered = allNews.where((n) => n.category == category).toList();
+    try {
+      final allNews = await dataSource.getAllNews();
+      final category = (state is NewsLoaded) ? (state as NewsLoaded).selectedCategory : 'Tout';
+
+      final dynamicCategories = allNews
+          .map((n) => n.category)
+          .where((c) => c.isNotEmpty)
+          .toSet()
+          .toList()
+        ..sort();
+      final categories = ['Tout', ...dynamicCategories];
+
+      List<NewsEntity> filtered;
+      if (category == 'Tout') {
+        filtered = allNews;
+      } else {
+        filtered = allNews
+            .where((n) => n.category.toLowerCase() == category.toLowerCase())
+            .toList();
+      }
+      emit(NewsLoaded(
+        allNews: allNews,
+        filteredNews: filtered,
+        selectedCategory: category,
+        categories: categories,
+      ));
+    } catch (e) {
+      emit(NewsError('Erreur de rafraîchissement: $e'));
     }
-    emit(NewsLoaded(
-      allNews: allNews,
-      filteredNews: filtered,
-      selectedCategory: category,
-      categories: _categories,
-    ));
   }
 }

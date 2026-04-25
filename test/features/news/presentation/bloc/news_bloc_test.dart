@@ -56,7 +56,7 @@ void main() {
       'NewsCategoryChanged filtre par catégorie entreprise',
       build: () => NewsBloc(dataSource: NewsMockDataSource()),
       seed: () {
-        final allNews = NewsMockDataSource().getAllNews();
+        final allNews = NewsMockDataSource().buildData();
         return NewsLoaded(
           allNews: allNews,
           filteredNews: allNews,
@@ -80,7 +80,7 @@ void main() {
       'NewsCategoryChanged "Tout" retourne toutes les news',
       build: () => NewsBloc(dataSource: NewsMockDataSource()),
       seed: () {
-        final allNews = NewsMockDataSource().getAllNews();
+        final allNews = NewsMockDataSource().buildData();
         final filtered =
             allNews.where((n) => n.category == 'entreprise').toList();
         return NewsLoaded(
@@ -102,7 +102,7 @@ void main() {
       'NewsCategoryChanged "analyse" filtre correctement',
       build: () => NewsBloc(dataSource: NewsMockDataSource()),
       seed: () {
-        final allNews = NewsMockDataSource().getAllNews();
+        final allNews = NewsMockDataSource().buildData();
         return NewsLoaded(
           allNews: allNews,
           filteredNews: allNews,
@@ -124,7 +124,7 @@ void main() {
       'NewsRefreshRequested recharge les données',
       build: () => NewsBloc(dataSource: NewsMockDataSource()),
       seed: () {
-        final allNews = NewsMockDataSource().getAllNews();
+        final allNews = NewsMockDataSource().buildData();
         return NewsLoaded(
           allNews: allNews,
           filteredNews: allNews,

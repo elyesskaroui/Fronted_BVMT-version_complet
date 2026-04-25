@@ -4,15 +4,7 @@ import 'package:flutter/services.dart';
 import '../../../../core/constants/app_typography.dart';
 import '../../domain/entities/market_summary_entity.dart';
 
-/// Premium animated index card for TUNINDEX / TUNINDEX20
-/// ──────────────────────────────────────────────────────
-/// 10/10 UI/UX:
-/// • Unified dark card (blue-night gradient) — consistent with stat cards
-/// • Rotating gradient border glow + diagonal shimmer sweep
-/// • Pill badge with white border for name
-/// • Accessible ▲/▼ icons + accessible colors (daltonism)
-/// • Tap ripple + scale animation + chevron indicator
-/// • Tooltip on long press
+
 class PremiumIndexCard extends StatefulWidget {
   final IndexData index;
   final VoidCallback? onTap;

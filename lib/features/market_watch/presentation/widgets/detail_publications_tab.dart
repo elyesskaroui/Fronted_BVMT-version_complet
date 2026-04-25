@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_typography.dart';
+import '../../../../core/services/pdf_download_service.dart';
 import '../../domain/entities/instrument_detail_models.dart';
 
 // ==========================================================================
@@ -65,13 +66,13 @@ class DetailPublicationsTab extends StatelessWidget {
               ),
             );
           },
-          child: _buildCard(publications[index], index),
+          child: _buildCard(context, publications[index], index),
         );
       },
     );
   }
 
-  Widget _buildCard(StockPublication pub, int index) {
+  Widget _buildCard(BuildContext context, StockPublication pub, int index) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
@@ -112,7 +113,11 @@ class DetailPublicationsTab extends StatelessWidget {
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    onTap: () {},
+                    onTap: () {
+                      if (pub.hasPdf) {
+                        _openPdf(pub.pdfUrl!, context);
+                      }
+                    },
                     child: Padding(
                       padding: const EdgeInsets.all(14),
                       child: Column(
@@ -201,26 +206,61 @@ class DetailPublicationsTab extends StatelessWidget {
                             ),
                           ],
                           const SizedBox(height: 6),
-                          // Read more with arrow
+                          // Read more / PDF button
                           Row(
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
-                              Text(
-                                'Lire plus',
-                                style: AppTypography.labelSmall.copyWith(
-                                  color: AppColors.primaryBlue
-                                      .withValues(alpha: 0.6),
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 10.5,
+                              if (pub.hasPdf)
+                                GestureDetector(
+                                  onTap: () => _openPdf(pub.pdfUrl!, context),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.accentOrange,
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.picture_as_pdf,
+                                            size: 12, color: Colors.white),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Télécharger PDF',
+                                          style: AppTypography.labelSmall
+                                              .copyWith(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 10.5,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                )
+                              else
+                                Row(
+                                  children: [
+                                    Text(
+                                      'Lire plus',
+                                      style:
+                                          AppTypography.labelSmall.copyWith(
+                                        color: AppColors.primaryBlue
+                                            .withValues(alpha: 0.6),
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 10.5,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 2),
+                                    Icon(
+                                      Icons.arrow_forward_ios_rounded,
+                                      size: 10,
+                                      color: AppColors.primaryBlue
+                                          .withValues(alpha: 0.5),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                              const SizedBox(width: 2),
-                              Icon(
-                                Icons.arrow_forward_ios_rounded,
-                                size: 10,
-                                color: AppColors.primaryBlue
-                                    .withValues(alpha: 0.5),
-                              ),
                             ],
                           ),
                         ],
@@ -234,5 +274,9 @@ class DetailPublicationsTab extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _openPdf(String url, BuildContext context) async {
+    await PdfDownloadService.downloadAndOpen(url, context);
   }
 }

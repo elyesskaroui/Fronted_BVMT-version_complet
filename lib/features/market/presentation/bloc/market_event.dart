@@ -26,6 +26,11 @@ class MarketSearchRequested extends MarketEvent {
   List<Object?> get props => [query];
 }
 
+/// Rafraîchissement automatique (timer interne — polling temps réel)
+class MarketAutoRefreshTick extends MarketEvent {
+  const MarketAutoRefreshTick();
+}
+
 /// Changement d'onglet (Toutes / Hausse / Baisse / Volume)
 class MarketTabChanged extends MarketEvent {
   final int tabIndex;

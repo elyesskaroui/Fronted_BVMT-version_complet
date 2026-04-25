@@ -1,6 +1,7 @@
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../news/data/datasources/news_mock_datasource.dart';
+import '../../../news/data/datasources/news_remote_datasource.dart';
 import '../../domain/usecases/market_summary_usecases.dart';
 import 'market_summary_event.dart';
 import 'market_summary_state.dart';
@@ -16,7 +17,9 @@ class MarketSummaryBloc
   final GetTopTransactions getTopTransactions;
   final GetTopHausses getTopHausses;
   final GetTopBaisses getTopBaisses;
-  final NewsMockDataSource newsDataSource;
+  final NewsRemoteDataSource newsDataSource;
+
+  Timer? _autoRefreshTimer;
 
   MarketSummaryBloc({
     required this.getMarketSummary,
@@ -31,7 +34,16 @@ class MarketSummaryBloc
   }) : super(const MarketSummaryInitial()) {
     on<MarketSummaryLoadRequested>(_onLoadRequested);
     on<MarketSummaryRefreshRequested>(_onRefreshRequested);
+    on<MarketSummaryAutoRefreshTick>((event, emit) => _loadData(emit));
     on<MarketSummaryPageChanged>(_onPageChanged);
+  }
+
+  void _startAutoRefresh() {
+    _autoRefreshTimer?.cancel();
+    _autoRefreshTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => add(const MarketSummaryAutoRefreshTick()),
+    );
   }
 
   Future<void> _onLoadRequested(
@@ -40,6 +52,7 @@ class MarketSummaryBloc
   ) async {
     emit(const MarketSummaryLoading());
     await _loadData(emit);
+    _startAutoRefresh();
   }
 
   Future<void> _onRefreshRequested(
@@ -71,7 +84,7 @@ class MarketSummaryBloc
         getTopBaisses(),            // 7
       ]);
 
-      final latestNews = newsDataSource.getAllNews().take(5).toList();
+      final latestNews = await newsDataSource.getAllNews(limit: 5);
 
       emit(MarketSummaryLoaded(
         summary: results[0] as dynamic,
@@ -89,5 +102,11 @@ class MarketSummaryBloc
         'Impossible de charger le résumé du marché: ${e.toString()}',
       ));
     }
+  }
+
+  @override
+  Future<void> close() {
+    _autoRefreshTimer?.cancel();
+    return super.close();
   }
 }

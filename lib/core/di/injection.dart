@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 
 // Core Services
@@ -5,6 +6,7 @@ import '../services/local_storage_service.dart';
 
 // Home
 import '../../features/home/data/datasources/home_mock_datasource.dart';
+import '../../features/home/data/datasources/market_summary_remote_datasource.dart';
 import '../../features/home/data/repositories/home_repository_impl.dart';
 import '../../features/home/domain/repositories/home_repository.dart';
 import '../../features/home/domain/usecases/home_usecases.dart';
@@ -22,6 +24,7 @@ import '../../features/home/presentation/bloc/index_chart_bloc.dart';
 
 // Market
 import '../../features/market/data/datasources/market_mock_datasource.dart';
+import '../../features/market/data/datasources/market_remote_datasource.dart';
 import '../../features/market/data/repositories/market_repository_impl.dart';
 import '../../features/market/domain/repositories/market_repository.dart';
 import '../../features/market/domain/usecases/market_usecases.dart';
@@ -42,10 +45,17 @@ import '../../features/auth/presentation/bloc/auth_bloc.dart';
 
 // News
 import '../../features/news/data/datasources/news_mock_datasource.dart';
+import '../../features/news/data/datasources/news_remote_datasource.dart';
 import '../../features/news/presentation/bloc/news_bloc.dart';
+import 'package:dio/dio.dart';
+
+// Notifications
+import '../../features/notifications/data/datasources/notifications_remote_datasource.dart';
+import '../../features/notifications/presentation/bloc/notifications_bloc.dart';
 
 // Market Watch
 import '../../features/market_watch/data/datasources/market_watch_mock_datasource.dart';
+import '../../features/market_watch/data/datasources/market_watch_remote_datasource.dart';
 import '../../features/market_watch/data/repositories/market_watch_repository_impl.dart';
 import '../../features/market_watch/domain/repositories/market_watch_repository.dart';
 import '../../features/market_watch/domain/usecases/market_watch_usecases.dart';
@@ -53,6 +63,7 @@ import '../../features/market_watch/presentation/bloc/market_watch_bloc.dart';
 
 // Market Watch — Instruments
 import '../../features/market_watch/data/datasources/instrument_mock_datasource.dart';
+import '../../features/market_watch/data/datasources/instrument_remote_datasource.dart';
 import '../../features/market_watch/data/repositories/instrument_repository_impl.dart';
 import '../../features/market_watch/domain/repositories/instrument_repository.dart';
 import '../../features/market_watch/domain/usecases/instrument_usecases.dart';
@@ -67,6 +78,7 @@ import '../../features/market_watch/presentation/bloc/historique_bloc.dart';
 
 // Indices
 import '../../features/indices/data/datasources/indices_mock_datasource.dart';
+import '../../features/indices/data/datasources/indices_remote_datasource.dart';
 import '../../features/indices/data/repositories/indices_repository_impl.dart';
 import '../../features/indices/domain/repositories/indices_repository.dart';
 import '../../features/indices/domain/usecases/indices_usecases.dart';
@@ -119,7 +131,7 @@ Future<void> initDependencies() async {
   // ═══════════════════════════════════════════
 
   // Data Sources
-  sl.registerLazySingleton(() => MarketSummaryMockDataSource());
+  sl.registerLazySingleton<MarketSummaryMockDataSource>(() => MarketSummaryRemoteDataSource(dio: sl<Dio>()));
 
   // Repositories
   sl.registerLazySingleton<MarketSummaryRepository>(
@@ -146,7 +158,7 @@ Future<void> initDependencies() async {
         getTopTransactions: sl(),
         getTopHausses: sl(),
         getTopBaisses: sl(),
-        newsDataSource: sl<NewsMockDataSource>(),
+        newsDataSource: sl<NewsRemoteDataSource>(),
       ));
 
   // BLoC — Index Chart (popup courbe intraday + cache GetStorage)
@@ -161,7 +173,7 @@ Future<void> initDependencies() async {
   // ═══════════════════════════════════════════
 
   // Data Sources
-  sl.registerLazySingleton(() => MarketMockDataSource());
+  sl.registerLazySingleton<MarketMockDataSource>(() => MarketRemoteDataSource(dio: sl<Dio>()));
 
   // Repositories
   sl.registerLazySingleton<MarketRepository>(
@@ -226,15 +238,39 @@ Future<void> initDependencies() async {
   // ── NEWS ──
   // ═══════════════════════════════════════════
 
+  // Dio pour le backend BVMT
+  // adb reverse tcp:3000 tcp:3000 redirige localhost:3000 du téléphone vers le PC
+  sl.registerLazySingleton<Dio>(() {
+    final dio = Dio(BaseOptions(
+      baseUrl: 'http://localhost:3000',
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 60),
+    ));
+    dio.interceptors.add(LogInterceptor(
+      requestHeader: false,
+      responseHeader: false,
+      requestBody: false,
+      responseBody: false,
+      logPrint: (obj) => debugPrint('[DIO] $obj'),
+    ));
+    return dio;
+  });
+
+  // Mock DataSource (gardé pour compatibilité MarketSummaryBloc)
   sl.registerLazySingleton(() => NewsMockDataSource());
-  sl.registerFactory(() => NewsBloc(dataSource: sl<NewsMockDataSource>()));
+
+  // Remote DataSource (données réelles BVMT)
+  sl.registerLazySingleton(() => NewsRemoteDataSource(dio: sl<Dio>()));
+
+  // BLoC — utilise le remote datasource
+  sl.registerFactory(() => NewsBloc(dataSource: sl<NewsRemoteDataSource>()));
 
   // ═══════════════════════════════════════════
   // ── MARKET WATCH ──
   // ═══════════════════════════════════════════
 
   // Data Sources
-  sl.registerLazySingleton(() => MarketWatchMockDataSource());
+  sl.registerLazySingleton<MarketWatchMockDataSource>(() => MarketWatchRemoteDataSource(dio: sl<Dio>()));
 
   // Repositories
   sl.registerLazySingleton<MarketWatchRepository>(
@@ -268,7 +304,7 @@ Future<void> initDependencies() async {
   // ═══════════════════════════════════════════
 
   // Data Sources
-  sl.registerLazySingleton(() => InstrumentMockDataSource());
+  sl.registerLazySingleton<InstrumentMockDataSource>(() => InstrumentRemoteDataSource(dio: sl<Dio>()));
 
   // Repositories
   sl.registerLazySingleton<InstrumentRepository>(
@@ -315,7 +351,7 @@ Future<void> initDependencies() async {
   // ═══════════════════════════════════════════
 
   // Data Sources
-  sl.registerLazySingleton(() => IndicesMockDataSource());
+  sl.registerLazySingleton<IndicesMockDataSource>(() => IndicesRemoteDataSource(dio: sl<Dio>()));
 
   // Repositories
   sl.registerLazySingleton<IndicesRepository>(
@@ -333,4 +369,14 @@ Future<void> initDependencies() async {
         localStorage: sl<LocalStorageService>(),
         dataSource: sl(),
       ));
+
+  // ═══════════════════════════════════════════
+  // ── NOTIFICATIONS ──
+  // ═══════════════════════════════════════════
+
+  sl.registerLazySingleton(
+      () => NotificationsRemoteDataSource(dio: sl<Dio>()));
+
+  sl.registerFactory(
+      () => NotificationsBloc(dataSource: sl<NotificationsRemoteDataSource>()));
 }

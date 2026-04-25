@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../features/alerts/presentation/bloc/alerts_bloc.dart';
-import '../../features/alerts/presentation/bloc/alerts_event.dart';
-import '../../features/alerts/presentation/pages/alerts_page.dart';
+import '../../features/notifications/presentation/bloc/notifications_bloc.dart';
+import '../../features/notifications/presentation/bloc/notifications_event.dart';
+import '../../features/notifications/presentation/pages/notifications_page.dart';
 import '../../features/auth/presentation/pages/forgot_password_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
@@ -20,6 +20,9 @@ import '../../features/stock_detail/presentation/pages/stock_detail_page.dart';
 import '../../features/market_watch/presentation/bloc/market_watch_bloc.dart';
 import '../../features/market_watch/presentation/bloc/market_watch_event.dart';
 import '../../features/market_watch/presentation/pages/market_watch_page.dart';
+import '../../features/news/presentation/bloc/news_bloc.dart';
+import '../../features/news/presentation/bloc/news_event.dart';
+import '../../features/news/presentation/pages/news_page.dart';
 import '../di/injection.dart';
 import '../navigation/main_shell.dart';
 import '../services/local_storage_service.dart';
@@ -93,6 +96,19 @@ class AppRouter {
         ),
       ),
 
+      // ── Actualités (plein écran) ──
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/news',
+        pageBuilder: (context, state) => SlideUpTransition(
+          child: BlocProvider(
+            create: (_) => sl<NewsBloc>()
+              ..add(const NewsLoadRequested()),
+            child: const NewsPage(),
+          ),
+        ),
+      ),
+
       // ── Market Watch (plein écran) ──
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
@@ -149,8 +165,9 @@ class AppRouter {
             path: '/alerts',
             pageBuilder: (context, state) => NoTransitionPage(
               child: BlocProvider(
-                create: (_) => AlertsBloc()..add(const AlertsLoadRequested()),
-                child: const AlertsPage(),
+                create: (_) => sl<NotificationsBloc>()
+                  ..add(const NotificationsLoadRequested()),
+                child: const NotificationsPage(),
               ),
             ),
           ),
